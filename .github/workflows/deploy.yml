@@ -1,0 +1,55 @@
+name: Deploy
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", "Dockerfile", "requirements.txt", "k8s/**"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # OIDC to AWS
+  contents: read
+
+concurrency: { group: deploy, cancel-in-progress: false }
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  CLUSTER: ${{ vars.EKS_CLUSTER }}
+  ECR_REPO: ${{ vars.ECR_REPOSITORY }}   # e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/ticket-assistant
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push (immutable tag = git SHA)
+        run: |
+          docker build -t "$ECR_REPO:${GITHUB_SHA}" .
+          docker push "$ECR_REPO:${GITHUB_SHA}"
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --name "$CLUSTER" --region "$AWS_REGION"
+
+      - name: Render manifests
+        working-directory: k8s
+        run: |
+          kustomize edit set image ticket-assistant="$ECR_REPO:${GITHUB_SHA}"
+          sed -i "s|__APP_ROLE_ARN__|${{ vars.APP_ROLE_ARN }}|" serviceaccount.yaml
+          sed -i "s|us-east-1|${AWS_REGION}|" configmap.yaml
+
+      - name: Deploy
+        run: |
+          kubectl apply -k k8s
+          kubectl -n support rollout status deploy/ticket-assistant --timeout=180s
+
+      - name: Roll back on failure
+        if: failure()
+        run: kubectl -n support rollout undo deploy/ticket-assistant || true

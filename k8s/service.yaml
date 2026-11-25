@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-assistant
+  namespace: support
+spec:
+  type: ClusterIP
+  selector: { app: ticket-assistant }
+  ports:
+    - { port: 80, targetPort: 8000 }
