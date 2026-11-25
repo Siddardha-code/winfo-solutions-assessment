@@ -12,13 +12,13 @@ module "vpc" {
   version = "~> 5.16"
 
   name            = var.cluster_name
-  cidr            = "10.0.0.0/16"
+  cidr            = "10.0.0.0/22"
   azs             = local.azs
   private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24"]
+  public_subnets  = ["10.0.3.0/24", "10.0.3.0/24"]
 
   enable_nat_gateway = true
-  single_nat_gateway = true # cost-saving for the exercise; use one per AZ in production
+  single_nat_gateway = true
 
   public_subnet_tags  = { "kubernetes.io/role/elb" = 1 }
   private_subnet_tags = { "kubernetes.io/role/internal-elb" = 1 }
@@ -29,7 +29,7 @@ resource "aws_ecr_repository" "app" {
   name                 = "ticket-assistant"
   image_tag_mutability = "IMMUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = true }
+  image_scanning_configuration { scan_on_push = true } #Each pushed image is scanned for known CVEs (Common Vulnerabilities and Exposures)
 }
 
 resource "aws_ecr_lifecycle_policy" "app" {
@@ -54,14 +54,14 @@ module "eks" {
   vpc_id          = module.vpc.vpc_id
   subnet_ids      = module.vpc.private_subnets
 
-  cluster_endpoint_public_access           = true # restrict with cluster_endpoint_public_access_cidrs in real setups
+  cluster_endpoint_public_access           = true # helps our laptop to reach K8S API if we want more secured one use CIDR to specify the access.
   enable_cluster_creator_admin_permissions = true
 
   cluster_addons = {
-    coredns    = {}
-    kube-proxy = {}
-    vpc-cni = {
-      configuration_values = jsonencode({ enableNetworkPolicy = "true" }) # enforce k8s NetworkPolicy
+    coredns    = {} #cluster dns helps in resolving name for pods.
+    kube-proxy = {} #for allocating network
+    vpc-cni = { #provides a real VPC IP to each pod
+      configuration_values = jsonencode({ enableNetworkPolicy = "true" })
     }
     metrics-server                  = {} # needed by HPA
     amazon-cloudwatch-observability = {} # Container Insights: metrics + container logs to CloudWatch

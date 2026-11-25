@@ -4,8 +4,6 @@ terraform {
     aws  = { source = "hashicorp/aws", version = "~> 5.80" }
     helm = { source = "hashicorp/helm", version = "~> 2.16" }
   }
-  # For a team setup, move state to S3 + DynamoDB locking:
-  # backend "s3" { bucket = "..." key = "ticket-assistant/terraform.tfstate" region = "..." dynamodb_table = "..." }
 }
 
 provider "aws" {
