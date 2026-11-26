@@ -49,7 +49,7 @@ curl -X POST http://<alb-dns>/v1/tickets/analyse \
 ```json
 {"category":"billing","priority":"high","summary":"...","suggested_response":"...","request_id":"...","model_id":"..."}
 ```
-Other endpoints: `/healthz` (liveness), `/readyz` (readiness), `/metrics` (Prometheus), `/docs` (OpenAPI).
+Other endpoints: `/healthz` (liveness), `/readyz` (readiness), `/docs` (OpenAPI).
 
 ## Run locally
 
@@ -97,7 +97,7 @@ kubectl -n support get ingress ticket-assistant   # ALB hostname (takes ~2-3 min
 |---|---|---|
 | **Bedrock Converse API + forced tool call** | Model-agnostic API, structured output without brittle JSON parsing, data stays in AWS, IAM auth | Prompt-only JSON is less reliable; direct Anthropic API needs key management |
 | **IRSA for pod→Bedrock** | Short-lived creds, scoped to one service account, no secrets | EKS Pod Identity is the newer, simpler option |
-| **GitHub OIDC → AWS role** | No stored AWS keys; trust limited to `repo:<owner/repo>:ref:refs/heads/main` | Long-lived keys in secrets (rejected) |
+| **GitHub OIDC → AWS role** | No stored AWS keys; trust limited to `repo:<owner/repo>:ref:refs/heads/master` | Long-lived keys in secrets (rejected) |
 | **EKS access entry scoped to `support` namespace** | CI can deploy the app only, not administer the cluster | Cluster-admin for CI (too broad) |
 | **Nodes in private subnets, ALB in public** | Pods not directly internet-reachable | Single NAT = cost saving, but an AZ SPOF; VPC endpoints would remove NAT dependency for Bedrock |
 | **ALB `target-type: ip`** | Skips NodePort/kube-proxy hop, pod-level health checks | `instance` mode is simpler but adds a hop |
@@ -118,7 +118,7 @@ kubectl -n support get ingress ticket-assistant   # ALB hostname (takes ~2-3 min
 ## Monitoring & operations
 
 - **Logs:** JSON to stdout → CloudWatch via the Container Insights add-on (`/aws/containerinsights/<cluster>/application`). Each log has a `request_id` (also returned in the `x-request-id` header).
-- **Metrics:** `/metrics` (request rate, latency histograms, status codes) for Prometheus/AMP; Container Insights gives node/pod CPU & memory. Suggested alarms: 5xx rate, p95 latency, pod restarts, ALB unhealthy hosts, Bedrock `InvocationThrottles` (CloudWatch `AWS/Bedrock`).
+- **Metrics:** Container Insights gives node/pod CPU & memory. Suggested alarms: 5xx rate, p95 latency, pod restarts, ALB unhealthy hosts, Bedrock `InvocationThrottles` (CloudWatch `AWS/Bedrock`).
 - **Scaling:** HPA on CPU (2–6). Because the app is I/O bound on Bedrock, the real limit is usually **Bedrock quota/throttling**, not CPU. The client retries with adaptive backoff and returns `429` when throttled.
 
 ## Troubleshooting cheat sheet
