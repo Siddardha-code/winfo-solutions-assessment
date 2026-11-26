@@ -8,7 +8,6 @@ resources:
   - service.yaml
   - ingress.yaml
   - hpa.yaml
-  - pdb.yaml
   - networkpolicy.yaml
 images:
   - name: ticket-assistant

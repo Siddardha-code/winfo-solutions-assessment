@@ -15,7 +15,7 @@ spec:
   policyTypes: [Ingress, Egress]
   ingress:
     - from:
-        - ipBlock: { cidr: 10.0.0.0/16 }   # ALB ENIs live in the VPC (target-type: ip)
+        - ipBlock: { cidr: 10.0.0.0/22 }   # ALB ENIs live in the VPC (target-type: ip)
       ports: [{ protocol: TCP, port: 8000 }]
   egress:
     - to:

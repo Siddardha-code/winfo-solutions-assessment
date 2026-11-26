@@ -7,7 +7,8 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip        # ALB -> pod IPs directly (VPC CNI)
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
-    # HTTPS in real life: attach an ACM cert + redirect
+    # requires a actual domain
+    # HTTPS in real life: attach an ACM cert + redirect 
     # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:...
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
     # alb.ingress.kubernetes.io/ssl-redirect: "443"
