@@ -41,7 +41,7 @@ spec:
           env:
             - name: API_KEY
               valueFrom:
-                secretKeyRef: { name: ticket-assistant-secrets, key: api-key, optional: true }
+                secretKeyRef: { name: ticket-assistant-secrets, key: api-key }
           readinessProbe:
             httpGet: { path: /readyz, port: 8000 }
             periodSeconds: 5

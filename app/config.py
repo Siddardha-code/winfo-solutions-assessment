@@ -8,7 +8,7 @@ class Settings:
     aws_region: str
     model_id: str
     llm_mode: str  # "bedrock" | "mock"
-    api_key: str | None
+    api_key: str
     max_tokens: int
 
 
@@ -18,6 +18,6 @@ def get_settings() -> Settings:
         aws_region=os.getenv("AWS_REGION", "us-east-1"),
         model_id=os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0"),
         llm_mode=os.getenv("LLM_MODE", "bedrock"),
-        api_key=os.getenv("API_KEY") or None,
+        api_key=os.environ["API_KEY"],
         max_tokens=int(os.getenv("MAX_TOKENS", "700")),
     )

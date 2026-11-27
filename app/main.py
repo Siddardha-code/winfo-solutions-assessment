@@ -4,6 +4,7 @@ import secrets
 import sys
 import uuid
 from functools import lru_cache
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -28,7 +29,12 @@ handler.setFormatter(JsonFormatter())
 logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
 log = logging.getLogger("api")
 
-app = FastAPI(title="Support Ticket Assistant", version="1.0.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    get_settings()  # fail fast: KeyError at startup if API_KEY is missing
+    yield
+
+app = FastAPI(title="Support Ticket Assistant", version="1.0.0", lifespan=lifespan)
 Instrumentator(excluded_handlers=["/healthz", "/readyz", "/metrics"]).instrument(app).expose(
     app, include_in_schema=False
 )
@@ -41,7 +47,7 @@ def get_service():
 
 
 def require_api_key(x_api_key: str | None = Header(default=None), settings: Settings = Depends(get_settings)):
-    if settings.api_key and not (x_api_key and secrets.compare_digest(x_api_key, settings.api_key)):
+    if not x_api_key or not secrets.compare_digest(x_api_key.encode(), settings.api_key.encode()):
         raise HTTPException(status_code=401, detail="invalid or missing API key")
 
 

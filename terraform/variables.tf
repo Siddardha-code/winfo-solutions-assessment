@@ -13,7 +13,7 @@ variable "kubernetes_version" {
 }
 variable "github_repo" {
   type        = string
-  description = "owner/repo allowed to deploy via GitHub OIDC, e.g. acexsiddu/support-ticket-assistant"
+  description = "owner/repo allowed to deploy via GitHub OIDC"
 }
 variable "create_github_oidc_provider" {
   type        = bool
