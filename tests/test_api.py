@@ -5,13 +5,15 @@ from app.llm import MockTriageService, TriageError
 from app.main import app, get_service
 
 client = TestClient(app)
+KEY = "secret"
+AUTH = {"x-api-key": KEY}
 TICKET = {"subject": "Charged twice", "body": "I was charged twice for my invoice this month."}
 
 
 def setup_function():
     app.dependency_overrides.clear()
     app.dependency_overrides[get_service] = lambda: MockTriageService()
-    app.dependency_overrides[get_settings] = lambda: Settings("us-east-1", "test-model", "mock", None, 100)
+    app.dependency_overrides[get_settings] = lambda: Settings("us-east-1", "test-model", "mock", KEY, 100)
 
 
 def test_health():
@@ -20,7 +22,7 @@ def test_health():
 
 
 def test_analyse_ok():
-    r = client.post("/v1/tickets/analyse", json=TICKET)
+    r = client.post("/v1/tickets/analyse", json=TICKET, headers=AUTH)
     assert r.status_code == 200
     body = r.json()
     assert body["category"] == "billing"
@@ -29,14 +31,14 @@ def test_analyse_ok():
 
 
 def test_validation_rejects_empty_body():
-    assert client.post("/v1/tickets/analyse", json={"subject": "x", "body": ""}).status_code == 422
+    r = client.post("/v1/tickets/analyse", json={"subject": "x", "body": ""}, headers=AUTH)
+    assert r.status_code == 422
 
 
 def test_api_key_enforced():
-    app.dependency_overrides[get_settings] = lambda: Settings("us-east-1", "m", "mock", "secret", 100)
     assert client.post("/v1/tickets/analyse", json=TICKET).status_code == 401
-    ok = client.post("/v1/tickets/analyse", json=TICKET, headers={"x-api-key": "secret"})
-    assert ok.status_code == 200
+    assert client.post("/v1/tickets/analyse", json=TICKET, headers={"x-api-key": "wrong"}).status_code == 401
+    assert client.post("/v1/tickets/analyse", json=TICKET, headers=AUTH).status_code == 200
 
 
 def test_llm_failure_maps_to_502():
@@ -45,4 +47,5 @@ def test_llm_failure_maps_to_502():
             raise TriageError("boom", 502)
 
     app.dependency_overrides[get_service] = lambda: Broken()
-    assert client.post("/v1/tickets/analyse", json=TICKET).status_code == 502
+    r = client.post("/v1/tickets/analyse", json=TICKET, headers=AUTH)
+    assert r.status_code == 502

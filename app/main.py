@@ -72,10 +72,9 @@ def healthz():
 
 
 @app.get("/readyz")
-def readyz():
+def readyz(settings: Settings = Depends(get_settings)):
     """Readiness: app is configured. Deliberately does NOT call Bedrock (avoids cost and cascading failures)."""
-    s = get_settings()
-    return {"status": "ready", "llm_mode": s.llm_mode, "model_id": s.model_id}
+    return {"status": "ready", "llm_mode": settings.llm_mode, "model_id": settings.model_id}
 
 
 @app.post("/v1/tickets/analyse", response_model=TicketOut, dependencies=[Depends(require_api_key)])
