@@ -7,7 +7,7 @@
 ```mermaid
 flowchart LR
     U[Client] -->|HTTP/HTTPS| ALB[ALB<br/>public subnets]
-    subgraph VPC["VPC 10.0.0.0/16"]
+    subgraph VPC["VPC 10.0.0.0/22"]
         ALB -->|target-type: ip| P1
         subgraph EKS["EKS cluster · private subnets · ns: support"]
             P1[Pod: FastAPI #1]
