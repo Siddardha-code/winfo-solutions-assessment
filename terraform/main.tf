@@ -29,7 +29,7 @@ resource "aws_ecr_repository" "app" {
   name                 = "ticket-assistant"
   image_tag_mutability = "IMMUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = true } # Each pushed image is scanned for known CVEs (Common Vulnerabilities and Exposures)
+  image_scanning_configuration { scan_on_push = true } #Each pushed image is scanned for known CVEs (Common Vulnerabilities and Exposures)
 }
 
 resource "aws_ecr_lifecycle_policy" "app" {
@@ -58,11 +58,11 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 
   cluster_addons = {
-    coredns    = {} # cluster dns helps in resolving name for pods.
-    kube-proxy = {} # for allocating network
-    vpc-cni = { 
+    coredns    = {} #cluster dns helps in resolving name for pods.
+    kube-proxy = {} #for allocating network
+    vpc-cni = {     #provides a real VPC IP to each pod
       configuration_values = jsonencode({ enableNetworkPolicy = "true" })
-    } # provides a real VPC IP to each pod
+    }
     metrics-server                  = {} # needed by HPA
     amazon-cloudwatch-observability = {} # Container Insights: metrics + container logs to CloudWatch
   }
