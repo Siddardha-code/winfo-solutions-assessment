@@ -26,7 +26,7 @@ jobs:
         with:
           ref: ${{ env.SHA }}
 
-        - name: Show OIDC claims (temporary debug)
+      - name: Show OIDC claims (temporary debug)
         run: |
           TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
