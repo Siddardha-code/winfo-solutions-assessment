@@ -9,14 +9,17 @@ FROM python:3.12-slim AS runtime-build
 
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/* \
-    && python -m pip install --no-cache-dir --upgrade pip
+    && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /srv
 COPY --from=builder /install /usr/local
-RUN python -m pip uninstall -y setuptools wheel
 COPY app ./app
+
+# runtime does not need a package manager
+RUN rm -rf /usr/local/lib/python3.12/site-packages/pip \
+            /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+            /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12
 
 # ---- final image: a single layer, so nothing deleted earlier can be reported
 FROM scratch
