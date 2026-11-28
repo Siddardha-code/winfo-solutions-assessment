@@ -1,2 +1,4 @@
 region      = "us-east-1"
 github_repo = "YOUR_GH_USER/support-ticket-assistant"
+github_owner_id = "YOUR_OWNER_ID"
+github_repo_id  = "YOUR_REPO_ID"

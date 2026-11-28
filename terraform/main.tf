@@ -6,6 +6,12 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
 }
 
+locals {
+  github_owner = split("/", var.github_repo)[0]
+  github_name  = split("/", var.github_repo)[1]
+  github_sub   = "repo:${local.github_owner}@${var.github_owner_id}/${local.github_name}@${var.github_repo_id}:ref:refs/heads/master"
+}
+
 # ---------------- Network: private nodes, public ALB ----------------
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -191,7 +197,7 @@ resource "aws_iam_role" "github_deployer" {
       Action    = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/master" }
+        StringLike   = { "token.actions.githubusercontent.com:sub" = local.github_sub }
       }
     }]
   })
