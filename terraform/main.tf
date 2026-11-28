@@ -60,9 +60,9 @@ module "eks" {
   cluster_addons = {
     coredns    = {} #cluster dns helps in resolving name for pods.
     kube-proxy = {} #for allocating network
-    vpc-cni = { #provides a real VPC IP to each pod
+    vpc-cni = { 
       configuration_values = jsonencode({ enableNetworkPolicy = "true" })
-    }
+    } #provides a real VPC IP to each pod
     metrics-server                  = {} # needed by HPA
     amazon-cloudwatch-observability = {} # Container Insights: metrics + container logs to CloudWatch
   }
