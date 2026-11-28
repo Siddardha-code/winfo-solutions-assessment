@@ -10,12 +10,12 @@ FROM python:3.12-slim AS runtime-build
 RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
-    && python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip uninstall -y setuptools wheel
+    && python -m pip install --no-cache-dir --upgrade pip
 
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /srv
 COPY --from=builder /install /usr/local
+RUN python -m pip uninstall -y setuptools wheel
 COPY app ./app
 
 # ---- final image: a single layer, so nothing deleted earlier can be reported
