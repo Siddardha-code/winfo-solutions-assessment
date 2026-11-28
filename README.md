@@ -18,7 +18,7 @@ flowchart LR
     end
     BR[Amazon Bedrock<br/>Converse API]
     P1 & P2 -. IRSA: bedrock:InvokeModel only .-> IAM[IAM role]
-    P1 & P2 -->|stdout JSON logs + /metrics| CW[CloudWatch Container Insights]
+    P1 & P2 -->|stdout JSON logs, pod metrics| CW[CloudWatch Container Insights]
 
     GH[GitHub Actions] -->|OIDC, no keys| IAM2[Deployer role]
     GH -->|push image:sha| ECR[(ECR<br/>immutable, scan on push)]
@@ -26,7 +26,7 @@ flowchart LR
     ECR -->|pull| EKS
 ```
 
-**Request flow:** client → ALB → pod (`/v1/tickets/analyse`) → input validation → Bedrock `Converse` with a *forced tool call* (guarantees JSON matching our schema) → pydantic validation → response. The pod authenticates to Bedrock via **IRSA** (a service-account-bound IAM role), never with keys.
+**Request flow:** client → ALB → pod (API key check at `\/v1/tickets/analyse`) → input validation → Bedrock `Converse` with a *forced tool call* (guarantees JSON matching our schema) → pydantic validation → response. The pod authenticates to Bedrock via **IRSA** (a service-account-bound IAM role), never with keys.
 
 ## Repo layout
 
@@ -58,14 +58,14 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest -q
 
-# offline, no AWS needed
-LLM_MODE=mock uvicorn app.main:app --reload
+# offline, no AWS needed (API_KEY is required; any value works locally)
+API_KEY=dev LLM_MODE=mock uvicorn app.main:app --reload
 
 # against real Bedrock (needs AWS creds + model access in the region)
-AWS_REGION=us-east-1 BEDROCK_MODEL_ID=<model-or-inference-profile-id> uvicorn app.main:app
+API_KEY=dev AWS_REGION=us-east-1 BEDROCK_MODEL_ID=<model-or-inference-profile-id> uvicorn app.main:app
 
 # container
-docker build -t ticket-assistant . && docker run -p 8000:8000 -e LLM_MODE=mock ticket-assistant
+docker build -t ticket-assistant . && docker run -p 8000:8000 -e API_KEY=dev -e LLM_MODE=mock ticket-assistant
 ```
 
 ## Deploy to AWS
@@ -135,6 +135,8 @@ kubectl -n support get ingress ticket-assistant   # ALB hostname (takes ~2-3 min
 | Rollout stuck | `kubectl rollout status/history`; readiness probe failing; the workflow auto-runs `rollout undo` on failure |
 | Pod can't reach Bedrock | NAT gateway/route tables, egress NetworkPolicy, DNS (UDP/TCP 53) |
 | CI can't deploy | OIDC `sub` matches repo/branch? access entry exists? `aws sts get-caller-identity` in the job |
+| Pod `CreateContainerConfigError` | The Secret `ticket-assistant-secrets` is missing, or its name or key (api-key) or namespace doesn't match the Deployment. Create it before deploying. |
+| Pod `CrashLoopBackOff`, logs show `KeyError: 'API_KEY'` | The variable is empty or unset: `kubectl -n support logs deploy/ticket-assistant --previous` |
 
 ## Known limitations / next steps
 
